@@ -7,6 +7,7 @@ import { IUserSchema, IUser } from "../Utils/Interfaces/User";
 //? ORIGINAL SIZE CHANGES, BUILDING THE HASH MAP EVERYTIME IS NOT A HEAVY PROCESS BUT DOING IT EVERY TIME IS NOT THE BEST APPROACH
 //? WHAT CAN I DO TO AVOID THAT?
 export default class HashTable<T> {
+    public static instance: HashTable<IUser> | null = null;
     private table: any[] = [];
     size: number = 0;
 
@@ -15,13 +16,21 @@ export default class HashTable<T> {
         this.size = size
     }
 
+    // IMPLEMENTS SINGLETON TO BE ABLE TO USE A UNIQUE INSTANCE OF THE CLASS FROM THE WEB APP CONTROLLER
+    //* WHY: TO AVOID CREATING AN INSTANCE OF THIS CLASS EVERYTIME THE A ROUTE IS CALLED
+    static async getInstance(): Promise<HashTable<IUser> | null> {
+        if(!HashTable.instance) {
+            HashTable.instance = await HashTable.SetUp()
+        }
+        return HashTable.instance
+    }
+
     // WITHOUT COUNTING THE TIME THAT TAKES TO CONNECT TO THE DATABASE
     // IS TAKING 0.022 SECONDS TO COMPLETE THE SETUP (ONLY 5 RECORDS IN THE DB)
     static async SetUp() {
         try {
             await MongoConnection.connect();
             Logger.info('SETTING UP HASH TABLE');
-
             // const start = process.hrtime()
 
             //* GET DOCUMENTS SIZE TO SET UP HASH MAP SIZE
@@ -39,13 +48,14 @@ export default class HashTable<T> {
                 return instance;
             } else {
                 Logger.error('THERE ARE NOT USERS')
+                return null
             }
-
             // const end = process.hrtime(start);
             // const timeTaken = (end[0]  + end[1] / 1e9);
             // console.log('Time taken:', timeTaken, 'seconds');
         } catch(error) {
             Logger.error('HASH MAP SETUP ERROR');
+            return null
         }
     }
 
@@ -176,7 +186,6 @@ export default class HashTable<T> {
         }
         
     }
-
 
     //? HOW MUCH DOES IT TAKES: AROUND 0.0028 SECONDS WITH AROUND 5 RECORDS IN THE DB
     async getFromDB(key: string): Promise<IUser[] | null> {

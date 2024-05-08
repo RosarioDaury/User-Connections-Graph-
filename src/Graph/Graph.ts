@@ -2,6 +2,7 @@ import User from "../Data/Models/User";
 import { IUser, IUserSchema } from "../Utils/Interfaces/User";
 import Logger from "../Utils/Logger";
 import HashTable from "./HashTable";
+import { IgraphForView } from "../Utils/Interfaces/GraphData";
 
 class GraphNode {
     public Id: string;
@@ -33,9 +34,23 @@ export default class Graph {
     private arrayNodes: GraphNode[] = [];
     private hashTable: HashTable<IUser>;
 
+    public static instance: Graph | null = null;
+
     constructor(hashTable: HashTable<IUser>){
         this.hashTable = hashTable
-        this.setHead()
+    }
+
+
+    // IMPLEMENTS SINGLETON TO BE ABLE TO USE A UNIQUE INSTANCE OF THE CLASS FROM THE WEB APP CONTROLLER
+    //* WHY: TO AVOID CREATING AN INSTANCE OF THIS CLASS EVERYTIME THE A ROUTE IS CALLED
+    static async getInstance(hashTable: HashTable<IUser> | null) {
+        if(!Graph.instance) {
+            if(hashTable) {
+                Graph.instance = new Graph(hashTable);
+                await this.instance?.setHead();
+            }
+        }
+        return Graph.instance
     }
 
     private async setHead(): Promise<void> {
@@ -119,6 +134,46 @@ export default class Graph {
             console.log(error)
         }
         
+    }
+
+    public getForGraphView(): IgraphForView | null {
+        try{
+
+            if(!this.head){
+                return null
+            }
+
+            let nodes: Array<GraphNode | null> = [this.head]
+            const visitedNodes: Array<string> = [];
+
+            // VIEW DATA
+            const viewNodes: Array<{id: string}> = [];
+            const viewLinks: Array<{source: string, target: string}> = [];
+
+            
+            while(nodes.length > 0) {
+                const node = nodes.shift();
+                if(!visitedNodes.includes(node!.Id)) {
+                    viewNodes.push({id: node!.Id})
+                    node?.AdyacentNodes.forEach((el: GraphNode) => {
+                        viewLinks.push({source: node!.Id, target: el.Id})
+                        nodes.push(el);
+                    })
+                    visitedNodes.push(node!.Id)
+                }
+            }
+
+            const data: IgraphForView = {
+                nodes: viewNodes,
+                links: viewLinks
+            } 
+            return data
+
+        } catch(error) {
+            Logger.error('GETTING DATA FOR VIEW [GRAPH]')
+            console.log(error)
+            return null
+        }
     }
 
     public findOne(id: string): GraphNode | null  {

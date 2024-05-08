@@ -1,15 +1,19 @@
-import Graph from "./Classes/Graph";
-import HashTable from "./Classes/HashTable";
+import express from 'express';
+import Logger from './Utils/Logger';
+import 'dotenv/config';
+import { engine } from 'express-handlebars';
+import path from 'path';
+import Router from './api/routes';
 
-(async () => {
-    const HTable = await HashTable.SetUp();
-    const GraphInstance = new Graph(HTable!);
+const App: express.Application = express();
 
-    setTimeout(() => {
-        // GraphInstance.removeEdge('66257a4c2451f51c2620854a', '66255ab469e7a2160cf7a926');
-    }, 5000);
-})();
+App.engine('handlebars', engine({defaultLayout: false}));
+App.set('view engine', 'handlebars');
+App.set('views', path.join(__dirname, 'api/views'));
 
+App.use(Router);
 
-// target: 66255ab469e7a2160cf7a926
-// source: 66257a4c2451f51c2620854a
+App.listen(process.env.PORT, () => {
+    Logger.info(`SERVER RUNNING ON PORT ${process.env.PORT}`)
+})
+
