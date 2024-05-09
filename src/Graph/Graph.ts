@@ -215,11 +215,21 @@ export default class Graph {
                 }
                 const targetNode = this.findOne(target);
 
+                // IF TARGET NODE DO NO EXIST IN THE GRAPH BUT EXIST IN THE HASH TABLE MEANS IT IS AN STAND ALONE NODE
                 if(targetNode) {
                     sourceNode.AddAdyacentNodeDirect(targetNode);
                     this.hashTable.addEdge(source, target);
-                }
-                
+                } else {    
+                    // TARGET NODE FROM HASHTABLE
+                    const targetHashTable = this.hashTable.get(target);
+
+                    if(targetHashTable) {
+                        const targetNodeNew = new GraphNode(target);
+                        this.arrayNodes.push(targetNodeNew);
+                        sourceNode.AddAdyacentNodeDirect(targetNodeNew);
+                        this.hashTable.addEdge(source, target);
+                    }
+                }   
             }
         } catch(error) {    
             Logger.error('ADD EDGE FAILED [GRAPH]')
@@ -241,6 +251,16 @@ export default class Graph {
             }
         } catch(error) {
             Logger.error('REMOVE EDGE FAILED [GRAPH]')
+        }
+    }
+
+    public async addNode(user: IUserSchema): Promise<void> {
+        try {
+            const userId = await this.hashTable.insert(user);
+            console.log(userId);
+        } catch(error) {
+            Logger.error('ADDING NODE FAILED [GRAPH]');
+            console.log(error);
         }
     }
 }

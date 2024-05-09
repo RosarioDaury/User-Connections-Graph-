@@ -84,11 +84,10 @@ export default class HashTable<T> {
 
     // TO INSERT DATA INTO DB AND REBUILT HASH MAP
     // HOW MUCH TAKES THIS INSERTION: 
-    async insert(value: IUserSchema) {
+    async insert(value: IUserSchema): Promise<string | null> {
         try{
             // const start = process.hrtime();
-
-            await User.create(value);
+            const newUser = await User.create(value);
             const size = await User.countDocuments();
     
             //* REBUILD HASH TABLE
@@ -102,16 +101,18 @@ export default class HashTable<T> {
                     this.insertHashTable(user.id!, user as T)
                 })
 
+                return String(newUser._id);
                 // CALCULATING PERFORMANCE
                 // const end = process.hrtime(start);
                 // const timeTaken = (end[0]  + end[1] / 1e9);
                 // console.log('Insertion time:', timeTaken, 'seconds');
-    
             } else {
-                Logger.error('THERE ARE NOT USERS')
+                Logger.error('THERE ARE NOT USERS');
+                return null
             }
         } catch(error) {
-            Logger.error('HASH MAP RECORD INSERTION')
+            Logger.error('HASH MAP RECORD INSERTION');
+            return null
         }
         
     }
@@ -119,6 +120,7 @@ export default class HashTable<T> {
     async addEdge(id: string, edge: string) {
         try {
             // UPDATE IN DB
+            console.log('ADDING EDGE', id, edge)
             await User.findByIdAndUpdate(id, { $push: {Edges: edge}});
             // UPDATE IN HASH MAP
             const index = this.hashFunction(id);
@@ -129,7 +131,6 @@ export default class HashTable<T> {
                 if(index2) {
                     const nodeUpdated = await User.findById(id);
                     this.table[index][index2][1] = nodeUpdated;
-                    console.log('NODE FROM HASH TABLE', this.table[index][index2][1], nodeUpdated);
                 }
             }
         } catch(error) {
